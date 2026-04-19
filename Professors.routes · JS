@@ -1,0 +1,13 @@
+const express = require('express');
+const router = express.Router();
+const { getProfessors, getProfessor, createProfessor, updateProfessor, getTodayAttendance, markAttendance } = require('../controllers/professors.controller');
+const { protect } = require('../middleware/auth.middleware');
+
+router.get('/', getProfessors);
+router.get('/attendance/today', protect, getTodayAttendance);
+router.get('/:id', getProfessor);
+router.post('/', protect, createProfessor);
+router.put('/:id', protect, updateProfessor);
+router.post('/:id/attendance', protect, markAttendance);
+
+module.exports = router;
