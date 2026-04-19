@@ -1,0 +1,96 @@
+const Event = require('../models/event.model');
+
+const getEvents = async (req, res) => {
+  try {
+    const filter = {};
+    if (req.query.category) filter.category = req.query.category;
+    if (req.query.status) filter.status = req.query.status;
+    const events = await Event.find(filter).populate('createdBy', 'firstName lastName email').sort('-startDate');
+    res.json(events);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+const getEvent = async (req, res) => {
+  try {
+    const event = await Event.findById(req.params.id).populate('createdBy', 'firstName lastName email');
+    if (!event) return res.status(404).json({ error: 'Event not found' });
+    res.json(event);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+const createEvent = async (req, res) => {
+  try {
+    const event = await Event.create({ ...req.body, createdBy: req.user._id });
+    res.status(201).json(event);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};
+
+const updateEvent = async (req, res) => {
+  try {
+    const event = await Event.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!event) return res.status(404).json({ error: 'Event not found' });
+    res.json(event);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};
+
+const deleteEvent = async (req, res) => {
+  try {
+    await Event.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Event deleted' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+const registerForEvent = async (req, res) => {
+  try {
+    const event = await Event.findById(req.params.id);
+    if (!event) return res.status(404).json({ error: 'Event not found' });
+
+    if (event.maxParticipants && event.registrations.length >= event.maxParticipants) {
+      return res.status(400).json({ error: 'Event is full' });
+    }
+
+    if (event.registrations.includes(req.user._id)) {
+      return res.status(400).json({ error: 'Already registered' });
+    }
+
+    event.registrations.push(req.user._id);
+    await event.save();
+    res.json({ message: 'Registered successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+const unregisterFromEvent = async (req, res) => {
+  try {
+    const event = await Event.findById(req.params.id);
+    if (!event) return res.status(404).json({ error: 'Event not found' });
+
+    event.registrations = event.registrations.filter(id => id.toString() !== req.user._id.toString());
+    await event.save();
+    res.json({ message: 'Unregistered successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+const getMyEvents = async (req, res) => {
+  try {
+    const events = await Event.find({ registrations: req.user._id }).populate('createdBy', 'firstName lastName email');
+    res.json(events);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+module.exports = { getEvents, getEvent, createEvent, updateEvent, deleteEvent, registerForEvent, unregisterFromEvent, getMyEvents };
