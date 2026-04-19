@@ -1,0 +1,55 @@
+const ScheduleSlot = require('../models/schedule.model');
+
+const getSlots = async (req, res) => {
+  try {
+    const filter = {};
+    if (req.query.year) filter.year = req.query.year;
+    if (req.query.semester) filter.semester = req.query.semester;
+    if (req.query.group) filter.group = req.query.group;
+    if (req.query.day) filter.day = req.query.day;
+    const slots = await ScheduleSlot.find(filter).populate('professor').sort('day startTime');
+    res.json(slots);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+const getSlot = async (req, res) => {
+  try {
+    const slot = await ScheduleSlot.findById(req.params.id).populate('professor');
+    if (!slot) return res.status(404).json({ error: 'Slot not found' });
+    res.json(slot);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+const createSlot = async (req, res) => {
+  try {
+    const slot = await ScheduleSlot.create(req.body);
+    res.status(201).json(slot);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};
+
+const updateSlot = async (req, res) => {
+  try {
+    const slot = await ScheduleSlot.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!slot) return res.status(404).json({ error: 'Slot not found' });
+    res.json(slot);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};
+
+const deleteSlot = async (req, res) => {
+  try {
+    await ScheduleSlot.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Slot deleted' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+module.exports = { getSlots, getSlot, createSlot, updateSlot, deleteSlot };
