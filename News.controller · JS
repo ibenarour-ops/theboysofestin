@@ -1,0 +1,53 @@
+const News = require('../models/news.model');
+
+const getNews = async (req, res) => {
+  try {
+    const filter = {};
+    if (req.query.category) filter.category = req.query.category;
+    if (req.query.featured) filter.isFeatured = true;
+    const news = await News.find(filter).populate('author', 'firstName lastName email').sort('-createdAt');
+    res.json(news);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+const getNewsArticle = async (req, res) => {
+  try {
+    const article = await News.findById(req.params.id).populate('author', 'firstName lastName email');
+    if (!article) return res.status(404).json({ error: 'Article not found' });
+    res.json(article);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+const createNews = async (req, res) => {
+  try {
+    const article = await News.create({ ...req.body, author: req.user._id });
+    res.status(201).json(article);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};
+
+const updateNews = async (req, res) => {
+  try {
+    const article = await News.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!article) return res.status(404).json({ error: 'Article not found' });
+    res.json(article);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};
+
+const deleteNews = async (req, res) => {
+  try {
+    await News.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Article deleted' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+module.exports = { getNews, getNewsArticle, createNews, updateNews, deleteNews };
